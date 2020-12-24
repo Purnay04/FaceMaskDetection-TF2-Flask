@@ -1,0 +1,85 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="/static/main.css"
+    </head>
+    <body>
+        <div class="header">
+        <h1>Mask Detector</h1>
+        </div>
+        <div class="container">
+            <div class="base_container">
+                <div class="imagediv">
+                    <img src=" {{ url_for('video_feed', begin=begin) }}" id='frame' width="50%">
+                </div>
+
+                <div class="buttons">
+                    {% if begin == 0%}
+                    <form action="/start_video" method="post">
+                        <button type="submit">Camera On</button>
+                    </form>
+                    {% else %}
+                    <form action="/end_video" method="post">
+                        <button type="submit">Camera Off</button>
+                    </form>
+                    {% endif %}
+
+                    {% if capture_btn %}
+                    <button type="submit" id="capture">Capture Image</button>
+                    {% endif %}
+
+                    <div id="delete_btn"></div>
+                    <div id="predict_btn"></div>
+                    <div id="retry"></div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="{{url_for('static', filename='jquery-3.5.1.min.js')}}"></script>
+    <script>
+        $('#capture').click(function(){
+            $.ajax({
+                url: 'http://127.0.0.1:5000/capture',
+                type: 'GET',
+                contentType: JSON,
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate', 
+                    'Pragma': 'no-cache', 
+                    'Expires': '0'
+                },
+                success: function(result){
+                    //document.getElementById('frame').src = 'data:image/jpg;base64,' + result['image'];
+                    $('#frame').attr('src', 'data:image/jpg;base64,' + result['image']);
+                    if (result['status'] == 1){
+                        $("#capture").hide();
+                        document.getElementById("delete_btn").innerHTML = ("<form action='/delete_img' method='post'><button type='submit' id='Delete'>Delete</button></form>");
+                        document.getElementById("predict_btn").innerHTML = ("<button type='submit' id='Predict'>Predict Image</button>");
+                        
+                        $('#Predict').click(function(){
+                            console.log("here");
+                            $.ajax({
+                                url: 'http://127.0.0.1:5000/prediction',
+                                type: 'GET',
+                                contentType: JSON,
+                                headers: {
+                                    'Cache-Control': 'no-cache, no-store, must-revalidate', 
+                                    'Pragma': 'no-cache', 
+                                    'Expires': '0'
+                                },
+                                success: function(result){
+                                    //document.getElementById('frame').src = 'data:image/jpg;base64,' + result['image'];
+                                    $('#frame').attr('src', 'data:image/jpg;base64,' + result['image']);
+                                    if (result['retry'] == 1){
+                                        $("#Predict").hide();
+                                        $("#Delete").hide();
+                                        document.getElementById("retry").innerHTML = ("<form action='/retry' method='post'><button type='submit' id='retry'>Retry</button></form>");
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            });
+        });
+
+    </script>
+</html>
